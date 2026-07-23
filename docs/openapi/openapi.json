@@ -56249,12 +56249,11 @@
                   "properties": {
                     "tier_boundaries": {
                       "type": "object",
-                      "description": "Score thresholds for complexity tier classification. All values must satisfy 0 < simple_medium < medium_complex < complex_reasoning < 1.",
+                      "description": "Score thresholds for complexity tier classification. All values must satisfy 0 < simple_medium < medium_complex < 1.",
                       "additionalProperties": false,
                       "required": [
                         "simple_medium",
-                        "medium_complex",
-                        "complex_reasoning"
+                        "medium_complex"
                       ],
                       "properties": {
                         "simple_medium": {
@@ -56265,13 +56264,7 @@
                         },
                         "medium_complex": {
                           "type": "number",
-                          "description": "Score boundary between MEDIUM and COMPLEX tiers",
-                          "exclusiveMinimum": 0,
-                          "exclusiveMaximum": 1
-                        },
-                        "complex_reasoning": {
-                          "type": "number",
-                          "description": "Score boundary between COMPLEX and REASONING tiers",
+                          "description": "Score boundary between MEDIUM and COMPLEX tiers; scores at or above are COMPLEX",
                           "exclusiveMinimum": 0,
                           "exclusiveMaximum": 1
                         }
@@ -56348,7 +56341,7 @@
       "put": {
         "operationId": "updateComplexityAnalyzerConfig",
         "summary": "Update complexity analyzer config",
-        "description": "Replaces the full complexity analyzer runtime config and hot-reloads the governance plugin. Tier thresholds must satisfy 0 < simple_medium < medium_complex < complex_reasoning < 1.",
+        "description": "Replaces the full complexity analyzer runtime config and hot-reloads the governance plugin. Tier thresholds must satisfy 0 < simple_medium < medium_complex < 1.",
         "tags": [
           "Governance"
         ],
@@ -56367,12 +56360,11 @@
                 "properties": {
                   "tier_boundaries": {
                     "type": "object",
-                    "description": "Score thresholds for complexity tier classification. All values must satisfy 0 < simple_medium < medium_complex < complex_reasoning < 1.",
+                    "description": "Score thresholds for complexity tier classification. All values must satisfy 0 < simple_medium < medium_complex < 1.",
                     "additionalProperties": false,
                     "required": [
                       "simple_medium",
-                      "medium_complex",
-                      "complex_reasoning"
+                      "medium_complex"
                     ],
                     "properties": {
                       "simple_medium": {
@@ -56383,13 +56375,7 @@
                       },
                       "medium_complex": {
                         "type": "number",
-                        "description": "Score boundary between MEDIUM and COMPLEX tiers",
-                        "exclusiveMinimum": 0,
-                        "exclusiveMaximum": 1
-                      },
-                      "complex_reasoning": {
-                        "type": "number",
-                        "description": "Score boundary between COMPLEX and REASONING tiers",
+                        "description": "Score boundary between MEDIUM and COMPLEX tiers; scores at or above are COMPLEX",
                         "exclusiveMinimum": 0,
                         "exclusiveMaximum": 1
                       }
@@ -56457,12 +56443,11 @@
                   "properties": {
                     "tier_boundaries": {
                       "type": "object",
-                      "description": "Score thresholds for complexity tier classification. All values must satisfy 0 < simple_medium < medium_complex < complex_reasoning < 1.",
+                      "description": "Score thresholds for complexity tier classification. All values must satisfy 0 < simple_medium < medium_complex < 1.",
                       "additionalProperties": false,
                       "required": [
                         "simple_medium",
-                        "medium_complex",
-                        "complex_reasoning"
+                        "medium_complex"
                       ],
                       "properties": {
                         "simple_medium": {
@@ -56473,13 +56458,7 @@
                         },
                         "medium_complex": {
                           "type": "number",
-                          "description": "Score boundary between MEDIUM and COMPLEX tiers",
-                          "exclusiveMinimum": 0,
-                          "exclusiveMaximum": 1
-                        },
-                        "complex_reasoning": {
-                          "type": "number",
-                          "description": "Score boundary between COMPLEX and REASONING tiers",
+                          "description": "Score boundary between MEDIUM and COMPLEX tiers; scores at or above are COMPLEX",
                           "exclusiveMinimum": 0,
                           "exclusiveMaximum": 1
                         }
@@ -56588,12 +56567,11 @@
                   "properties": {
                     "tier_boundaries": {
                       "type": "object",
-                      "description": "Score thresholds for complexity tier classification. All values must satisfy 0 < simple_medium < medium_complex < complex_reasoning < 1.",
+                      "description": "Score thresholds for complexity tier classification. All values must satisfy 0 < simple_medium < medium_complex < 1.",
                       "additionalProperties": false,
                       "required": [
                         "simple_medium",
-                        "medium_complex",
-                        "complex_reasoning"
+                        "medium_complex"
                       ],
                       "properties": {
                         "simple_medium": {
@@ -56604,13 +56582,7 @@
                         },
                         "medium_complex": {
                           "type": "number",
-                          "description": "Score boundary between MEDIUM and COMPLEX tiers",
-                          "exclusiveMinimum": 0,
-                          "exclusiveMaximum": 1
-                        },
-                        "complex_reasoning": {
-                          "type": "number",
-                          "description": "Score boundary between COMPLEX and REASONING tiers",
+                          "description": "Score boundary between MEDIUM and COMPLEX tiers; scores at or above are COMPLEX",
                           "exclusiveMinimum": 0,
                           "exclusiveMaximum": 1
                         }
