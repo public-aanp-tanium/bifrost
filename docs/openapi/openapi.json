@@ -56272,7 +56272,7 @@
                     },
                     "keywords": {
                       "type": "object",
-                      "description": "Editable keyword lists used by the complexity analyzer. Only the four user-facing\ndimensions are exposed; `reasoning_keywords` entries drive the reasoning tier\noverride. Matching is normalized to lowercase and duplicates are removed on save.\n",
+                      "description": "Editable keyword lists used by the complexity analyzer. Only the four user-facing\ndimensions are exposed; `reasoning_keywords` entries drive the override that\npromotes requests to the COMPLEX tier. Matching is normalized to lowercase and\nduplicates are removed on save.\n",
                       "additionalProperties": false,
                       "required": [
                         "code_keywords",
@@ -56383,7 +56383,7 @@
                   },
                   "keywords": {
                     "type": "object",
-                    "description": "Editable keyword lists used by the complexity analyzer. Only the four user-facing\ndimensions are exposed; `reasoning_keywords` entries drive the reasoning tier\noverride. Matching is normalized to lowercase and duplicates are removed on save.\n",
+                    "description": "Editable keyword lists used by the complexity analyzer. Only the four user-facing\ndimensions are exposed; `reasoning_keywords` entries drive the override that\npromotes requests to the COMPLEX tier. Matching is normalized to lowercase and\nduplicates are removed on save.\n",
                     "additionalProperties": false,
                     "required": [
                       "code_keywords",
@@ -56466,7 +56466,7 @@
                     },
                     "keywords": {
                       "type": "object",
-                      "description": "Editable keyword lists used by the complexity analyzer. Only the four user-facing\ndimensions are exposed; `reasoning_keywords` entries drive the reasoning tier\noverride. Matching is normalized to lowercase and duplicates are removed on save.\n",
+                      "description": "Editable keyword lists used by the complexity analyzer. Only the four user-facing\ndimensions are exposed; `reasoning_keywords` entries drive the override that\npromotes requests to the COMPLEX tier. Matching is normalized to lowercase and\nduplicates are removed on save.\n",
                       "additionalProperties": false,
                       "required": [
                         "code_keywords",
@@ -56590,7 +56590,7 @@
                     },
                     "keywords": {
                       "type": "object",
-                      "description": "Editable keyword lists used by the complexity analyzer. Only the four user-facing\ndimensions are exposed; `reasoning_keywords` entries drive the reasoning tier\noverride. Matching is normalized to lowercase and duplicates are removed on save.\n",
+                      "description": "Editable keyword lists used by the complexity analyzer. Only the four user-facing\ndimensions are exposed; `reasoning_keywords` entries drive the override that\npromotes requests to the COMPLEX tier. Matching is normalized to lowercase and\nduplicates are removed on save.\n",
                       "additionalProperties": false,
                       "required": [
                         "code_keywords",
@@ -56733,7 +56733,7 @@
           {
             "name": "complexity_tiers",
             "in": "query",
-            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX)",
+            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX, or the legacy REASONING tier recorded on historical rows before it was merged into COMPLEX)",
             "schema": {
               "type": "string"
             }
@@ -57329,7 +57329,7 @@
           {
             "name": "complexity_tiers",
             "in": "query",
-            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX)",
+            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX, or the legacy REASONING tier recorded on historical rows before it was merged into COMPLEX)",
             "schema": {
               "type": "string"
             }
@@ -57578,6 +57578,22 @@
             }
           },
           {
+            "name": "complexity_tiers",
+            "in": "query",
+            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX, or the legacy REASONING tier recorded on historical rows before it was merged into COMPLEX)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_mechanisms",
+            "in": "query",
+            "description": "Comma-separated list of complexity classification mechanisms to filter by (lexical, skipped)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "start_time",
             "in": "query",
             "description": "Start time filter (RFC3339 format)",
@@ -57663,22 +57679,6 @@
             "name": "stop_reasons",
             "in": "query",
             "description": "Comma-separated list of stop reasons to filter by",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "complexity_tiers",
-            "in": "query",
-            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX)",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "complexity_mechanisms",
-            "in": "query",
-            "description": "Comma-separated list of complexity classification mechanisms to filter by (lexical, skipped)",
             "schema": {
               "type": "string"
             }
@@ -57856,6 +57856,22 @@
             "name": "routing_engine_used",
             "in": "query",
             "description": "Comma-separated list of routing engines to filter by",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_tiers",
+            "in": "query",
+            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX, or the legacy REASONING tier recorded on historical rows before it was merged into COMPLEX)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_mechanisms",
+            "in": "query",
+            "description": "Comma-separated list of complexity classification mechanisms to filter by (lexical, skipped)",
             "schema": {
               "type": "string"
             }
@@ -58088,6 +58104,22 @@
             }
           },
           {
+            "name": "complexity_tiers",
+            "in": "query",
+            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX, or the legacy REASONING tier recorded on historical rows before it was merged into COMPLEX)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_mechanisms",
+            "in": "query",
+            "description": "Comma-separated list of complexity classification mechanisms to filter by (lexical, skipped)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "start_time",
             "in": "query",
             "description": "Start time filter (RFC3339 format)",
@@ -58315,6 +58347,22 @@
             "name": "routing_engine_used",
             "in": "query",
             "description": "Comma-separated list of routing engines to filter by",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_tiers",
+            "in": "query",
+            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX, or the legacy REASONING tier recorded on historical rows before it was merged into COMPLEX)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_mechanisms",
+            "in": "query",
+            "description": "Comma-separated list of complexity classification mechanisms to filter by (lexical, skipped)",
             "schema": {
               "type": "string"
             }
@@ -58563,6 +58611,22 @@
             }
           },
           {
+            "name": "complexity_tiers",
+            "in": "query",
+            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX, or the legacy REASONING tier recorded on historical rows before it was merged into COMPLEX)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_mechanisms",
+            "in": "query",
+            "description": "Comma-separated list of complexity classification mechanisms to filter by (lexical, skipped)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "start_time",
             "in": "query",
             "description": "Start time filter (RFC3339 format)",
@@ -58794,6 +58858,22 @@
             }
           },
           {
+            "name": "complexity_tiers",
+            "in": "query",
+            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX, or the legacy REASONING tier recorded on historical rows before it was merged into COMPLEX)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_mechanisms",
+            "in": "query",
+            "description": "Comma-separated list of complexity classification mechanisms to filter by (lexical, skipped)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "start_time",
             "in": "query",
             "description": "Start time filter (RFC3339 format)",
@@ -59020,6 +59100,22 @@
             "name": "routing_engine_used",
             "in": "query",
             "description": "Comma-separated list of routing engines to filter by",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_tiers",
+            "in": "query",
+            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX, or the legacy REASONING tier recorded on historical rows before it was merged into COMPLEX)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_mechanisms",
+            "in": "query",
+            "description": "Comma-separated list of complexity classification mechanisms to filter by (lexical, skipped)",
             "schema": {
               "type": "string"
             }
@@ -59263,6 +59359,22 @@
             "name": "routing_engine_used",
             "in": "query",
             "description": "Comma-separated list of routing engines to filter by",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_tiers",
+            "in": "query",
+            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX, or the legacy REASONING tier recorded on historical rows before it was merged into COMPLEX)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_mechanisms",
+            "in": "query",
+            "description": "Comma-separated list of complexity classification mechanisms to filter by (lexical, skipped)",
             "schema": {
               "type": "string"
             }
@@ -59532,6 +59644,22 @@
             }
           },
           {
+            "name": "complexity_tiers",
+            "in": "query",
+            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX, or the legacy REASONING tier recorded on historical rows before it was merged into COMPLEX)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_mechanisms",
+            "in": "query",
+            "description": "Comma-separated list of complexity classification mechanisms to filter by (lexical, skipped)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "start_time",
             "in": "query",
             "description": "Start time filter (RFC3339 format)",
@@ -59786,6 +59914,22 @@
             "name": "routing_engine_used",
             "in": "query",
             "description": "Comma-separated list of routing engines to filter by",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_tiers",
+            "in": "query",
+            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX, or the legacy REASONING tier recorded on historical rows before it was merged into COMPLEX)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_mechanisms",
+            "in": "query",
+            "description": "Comma-separated list of complexity classification mechanisms to filter by (lexical, skipped)",
             "schema": {
               "type": "string"
             }
@@ -60056,6 +60200,22 @@
             "name": "routing_engine_used",
             "in": "query",
             "description": "Comma-separated list of routing engines to filter by",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_tiers",
+            "in": "query",
+            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX, or the legacy REASONING tier recorded on historical rows before it was merged into COMPLEX)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_mechanisms",
+            "in": "query",
+            "description": "Comma-separated list of complexity classification mechanisms to filter by (lexical, skipped)",
             "schema": {
               "type": "string"
             }
@@ -60464,6 +60624,22 @@
             }
           },
           {
+            "name": "complexity_tiers",
+            "in": "query",
+            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX, or the legacy REASONING tier recorded on historical rows before it was merged into COMPLEX)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_mechanisms",
+            "in": "query",
+            "description": "Comma-separated list of complexity classification mechanisms to filter by (lexical, skipped)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "start_time",
             "in": "query",
             "description": "Start time filter (RFC3339 format)",
@@ -60822,6 +60998,22 @@
             "name": "routing_engine_used",
             "in": "query",
             "description": "Comma-separated list of routing engines to filter by",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_tiers",
+            "in": "query",
+            "description": "Comma-separated list of routing complexity tiers to filter by (SIMPLE, MEDIUM, COMPLEX, or the legacy REASONING tier recorded on historical rows before it was merged into COMPLEX)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "complexity_mechanisms",
+            "in": "query",
+            "description": "Comma-separated list of complexity classification mechanisms to filter by (lexical, skipped)",
             "schema": {
               "type": "string"
             }
@@ -86103,42 +86295,25 @@
             "nullable": true
           },
           "complexity_tier": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "SIMPLE",
-                  "MEDIUM",
-                  "COMPLEX"
-                ]
-              },
-              {
-                "type": "null"
-              }
+            "type": "string",
+            "enum": [
+              "SIMPLE",
+              "MEDIUM",
+              "COMPLEX",
+              "REASONING"
             ],
-            "description": "Complexity tier used for routing; null when no routing rule referenced complexity_tier, or when classification was demanded but skipped (see complexity_mechanism)"
+            "description": "Complexity tier used for routing; null when no routing rule referenced complexity_tier, or when classification was demanded but skipped (see complexity_mechanism). REASONING is historical-only — it was merged into COMPLEX and is never emitted for new requests, but survives in log rows recorded under the old scheme.",
+            "nullable": true
           },
           "complexity_mechanism": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "How the complexity tier was classified (lexical, or skipped when classification was demanded but produced no tier)"
+            "type": "string",
+            "description": "How the complexity tier was classified (lexical, or skipped when classification was demanded but produced no tier)",
+            "nullable": true
           },
           "complexity_score": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Raw complexity score behind the tier"
+            "type": "number",
+            "description": "Raw complexity score behind the tier",
+            "nullable": true
           },
           "stream": {
             "type": "boolean"
