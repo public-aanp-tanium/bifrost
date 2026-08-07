@@ -11,28 +11,39 @@ import (
 
 var NoDeadline time.Time
 
-var reservedKeys = []any{
-	BifrostContextKeyVirtualKey,
-	BifrostContextKeyAPIKeyName,
-	BifrostContextKeyAPIKeyID,
-	BifrostContextKeyDirectKey,
-	BifrostContextKeyRequestID,
-	BifrostContextKeyFallbackRequestID,
-	BifrostContextKeySelectedKeyID,
-	BifrostContextKeySelectedKeyName,
-	BifrostContextKeyNumberOfRetries,
-	BifrostContextKeyFallbackIndex,
-	BifrostContextKeySkipKeySelection,
-	BifrostContextKeyPassthroughHeaders,
-	BifrostContextKeySkipBudgetAndRateLimits,
-	BifrostContextKeyURLPath,
-	BifrostContextKeyDeferTraceCompletion,
-	BifrostContextKeyAttemptTrail,
-	BifrostContextKeyStreamGated,
-	BifrostContextKeyMCPHealthCheckRequest,
-	BifrostContextKeyUpstreamLatency,
-	BifrostContextKeyRoutingInfo,
-	BifrostContextKeyMCPInboundBearer,
+// reservedKeys is a set (not a slice) so the per-write guard is O(1) instead of a
+// linear interface-equality scan; the guard runs on every restricted write, per
+// chunk on streams. Map lookup with an `any` key preserves the exact
+// type-and-value matching semantics the previous slices.Contains had.
+var reservedKeys = map[any]struct{}{
+	BifrostContextKeyVirtualKey:              {},
+	BifrostContextKeyAPIKeyName:              {},
+	BifrostContextKeyAPIKeyID:                {},
+	BifrostContextKeyDirectKey:               {},
+	BifrostContextKeyRequestID:               {},
+	BifrostContextKeyFallbackRequestID:       {},
+	BifrostContextKeySelectedKeyID:           {},
+	BifrostContextKeySelectedKeyName:         {},
+	BifrostContextKeyNumberOfRetries:         {},
+	BifrostContextKeyFallbackIndex:           {},
+	BifrostContextKeySkipKeySelection:        {},
+	BifrostContextKeyPassthroughHeaders:      {},
+	BifrostContextKeySkipBudgetAndRateLimits: {},
+	BifrostContextKeyURLPath:                 {},
+	BifrostContextKeyDeferTraceCompletion:    {},
+	BifrostContextKeyAttemptTrail:            {},
+	BifrostContextKeyStreamGated:             {},
+	BifrostContextKeyMCPHealthCheckRequest:   {},
+	BifrostContextKeyUpstreamLatency:         {},
+	BifrostContextKeyRoutingInfo:             {},
+	BifrostContextKeyMCPInboundBearer:        {},
+}
+
+// isReservedKey reports whether key is a reserved context key whose writes are
+// blocked while blockRestrictedWrites is set.
+func isReservedKey(key any) bool {
+	_, ok := reservedKeys[key]
+	return ok
 }
 
 // pluginLogStore holds plugin log entries accumulated during request processing.
@@ -95,7 +106,7 @@ func NewBifrostContext(parent context.Context, deadline time.Time) *BifrostConte
 		deadline:              deadline,
 		hasDeadline:           !deadline.IsZero(),
 		done:                  make(chan struct{}),
-		userValues:            make(map[any]any),
+		userValues:            make(map[any]any, 16),
 		blockRestrictedWrites: atomic.Bool{},
 	}
 	ctx.blockRestrictedWrites.Store(false)
@@ -378,7 +389,7 @@ func (bc *BifrostContext) SetValue(key, value any) {
 		return
 	}
 	// Check if the key is a reserved key
-	if bc.blockRestrictedWrites.Load() && slices.Contains(reservedKeys, key) {
+	if bc.blockRestrictedWrites.Load() && isReservedKey(key) {
 		// we silently drop writes for these reserved keys
 		return
 	}
@@ -425,7 +436,7 @@ func (bc *BifrostContext) ClearValue(key any) {
 		return
 	}
 	// Check if the key is a reserved key
-	if bc.blockRestrictedWrites.Load() && slices.Contains(reservedKeys, key) {
+	if bc.blockRestrictedWrites.Load() && isReservedKey(key) {
 		// we silently drop writes for these reserved keys
 		return
 	}
@@ -445,7 +456,7 @@ func (bc *BifrostContext) GetAndSetValue(key any, value any) any {
 	bc.valuesMu.Lock()
 	defer bc.valuesMu.Unlock()
 	// Check if the key is a reserved key
-	if bc.blockRestrictedWrites.Load() && slices.Contains(reservedKeys, key) {
+	if bc.blockRestrictedWrites.Load() && isReservedKey(key) {
 		// we silently drop writes for these reserved keys
 		return bc.userValues[key]
 	}
