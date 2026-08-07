@@ -4,9 +4,13 @@
 
 Official Helm charts for deploying [Bifrost](https://github.com/maximhq/bifrost) - a high-performance AI gateway with unified interface for multiple providers.
 
-**Latest Version:** 2.1.33
+**Latest Version:** 2.1.34
 
 ## Changelog
+
+### Upcoming
+
+- Added OTEL log export (GenAI events): `bifrost.plugins.otel.config.logs_enabled`, `logs_endpoint` (required when enabled), and `logs_disable_content_logging`, available on both the flat profile and each entry of `bifrost.plugins.otel.config.profiles[]`. These render into `logs_enabled`, `logs_endpoint`, and `logs_disable_content_logging` on the otel plugin config.
 
 ### 2.1.33
 

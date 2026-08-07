@@ -1393,6 +1393,15 @@ false
 {{- if $inputConfig.metrics_push_interval }}
 {{- $_ := set $otelConfig "metrics_push_interval" $inputConfig.metrics_push_interval }}
 {{- end }}
+{{- if hasKey $inputConfig "logs_enabled" }}
+{{- $_ := set $otelConfig "logs_enabled" $inputConfig.logs_enabled }}
+{{- end }}
+{{- if $inputConfig.logs_endpoint }}
+{{- $_ := set $otelConfig "logs_endpoint" $inputConfig.logs_endpoint }}
+{{- end }}
+{{- if hasKey $inputConfig "logs_disable_content_logging" }}
+{{- $_ := set $otelConfig "logs_disable_content_logging" $inputConfig.logs_disable_content_logging }}
+{{- end }}
 {{- if $inputConfig.headers }}
 {{- $_ := set $otelConfig "headers" $inputConfig.headers }}
 {{- end }}
@@ -1904,6 +1913,9 @@ Call this template at the beginning of deployment/stateful templates
 {{- if and $profile.metrics_enabled (not $profile.metrics_endpoint) }}
 {{- fail (printf "ERROR: bifrost.plugins.otel.config.profiles[%d].metrics_endpoint is required when metrics_enabled is true." $idx) }}
 {{- end }}
+{{- if and $profile.logs_enabled (not $profile.logs_endpoint) }}
+{{- fail (printf "ERROR: bifrost.plugins.otel.config.profiles[%d].logs_endpoint is required when logs_enabled is true." $idx) }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- else }}
@@ -1918,6 +1930,9 @@ Call this template at the beginning of deployment/stateful templates
 {{- end }}
 {{- if and $otelInputConfig.metrics_enabled (not $otelInputConfig.metrics_endpoint) }}
 {{- fail "ERROR: bifrost.plugins.otel.config.metrics_endpoint is required when metrics_enabled is true." }}
+{{- end }}
+{{- if and $otelInputConfig.logs_enabled (not $otelInputConfig.logs_endpoint) }}
+{{- fail "ERROR: bifrost.plugins.otel.config.logs_endpoint is required when logs_enabled is true." }}
 {{- end }}
 {{- end }}
 {{- end }}
