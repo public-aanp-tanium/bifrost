@@ -3095,6 +3095,17 @@ func (m *mockCustomerStore) DeleteBudget(_ context.Context, _ string, _ ...*gorm
 
 type mockCustomerGovernanceManager struct {
 	GovernanceManager
+	// adoptedBudgetIDs records what the handler asked to be re-anchored onto the
+	// calendar grid, so a test can tell "alignment was switched on" apart from
+	// "alignment was already on and nothing needed adopting".
+	adoptedBudgetIDs []string
+	adoptCalls       int
+}
+
+func (m *mockCustomerGovernanceManager) AdoptCalendarAlignmentInMemory(_ context.Context, _ BudgetUsageResetOwner, budgetIDs []string, _ []string) error {
+	m.adoptCalls++
+	m.adoptedBudgetIDs = append(m.adoptedBudgetIDs, budgetIDs...)
+	return nil
 }
 
 func (m *mockCustomerGovernanceManager) ReloadCustomer(_ context.Context, _ string) (*configstoreTables.TableCustomer, error) {
@@ -3210,7 +3221,8 @@ func TestUpdateCustomer_CalendarAligned_DoesNotTouchBudgets(t *testing.T) {
 			CurrentUsage:  99.0,
 		}},
 	}
-	h := &GovernanceHandler{configStore: store, governanceManager: &mockCustomerGovernanceManager{}}
+	governanceManager := &mockCustomerGovernanceManager{}
+	h := &GovernanceHandler{configStore: store, governanceManager: governanceManager}
 
 	body, _ := json.Marshal(map[string]any{"calendar_aligned": true})
 	ctx := &fasthttp.RequestCtx{}
@@ -3232,6 +3244,16 @@ func TestUpdateCustomer_CalendarAligned_DoesNotTouchBudgets(t *testing.T) {
 		if b.CurrentUsage != 99.0 {
 			t.Errorf("budget %s CurrentUsage changed to %v; enabling alignment must not clear usage", b.ID, b.CurrentUsage)
 		}
+	}
+	// The config write leaves the window alone, but on its own that is exactly the
+	// bug: the reset sweep would find the window overdue against the new boundary
+	// and clear the 99.0 above. The handler must hand the budget to the in-memory
+	// adoption, which re-anchors it forward instead.
+	if governanceManager.adoptCalls != 1 {
+		t.Errorf("expected exactly one calendar adoption call, got %d", governanceManager.adoptCalls)
+	}
+	if len(governanceManager.adoptedBudgetIDs) != 1 || governanceManager.adoptedBudgetIDs[0] != budgetID {
+		t.Errorf("expected budget %s to be adopted onto its calendar boundary, got %v", budgetID, governanceManager.adoptedBudgetIDs)
 	}
 }
 
@@ -3262,7 +3284,8 @@ func TestUpdateCustomer_CalendarAligned_NoSnapWhenAlreadyEnabled(t *testing.T) {
 			},
 		},
 	}
-	h := &GovernanceHandler{configStore: store, governanceManager: &mockCustomerGovernanceManager{}}
+	governanceManager := &mockCustomerGovernanceManager{}
+	h := &GovernanceHandler{configStore: store, governanceManager: governanceManager}
 
 	body, _ := json.Marshal(map[string]any{"calendar_aligned": true})
 	ctx := &fasthttp.RequestCtx{}
@@ -3276,6 +3299,12 @@ func TestUpdateCustomer_CalendarAligned_NoSnapWhenAlreadyEnabled(t *testing.T) {
 	}
 	if len(store.updatedBudgets) != 0 {
 		t.Errorf("expected no UpdateBudget call when calendar_aligned was already true, got %d", len(store.updatedBudgets))
+	}
+	// Adoption belongs to the switch-over only. A budget already on the calendar
+	// grid must not be re-anchored on every unrelated config write, which would
+	// keep pushing its boundary forward and stop it ever resetting.
+	if governanceManager.adoptCalls != 0 {
+		t.Errorf("alignment was already enabled, so no adoption should be requested; got %d calls", governanceManager.adoptCalls)
 	}
 }
 
