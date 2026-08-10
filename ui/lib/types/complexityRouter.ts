@@ -38,10 +38,34 @@ export interface SemanticStatusInfo {
 	error?: string;
 }
 
+// Mirrors ComplexitySessionMode* in framework/configstore. "off" is a real
+// stored value rather than an absent block, so an operator who turns session
+// behavior off keeps the settings they tuned instead of losing them.
+export type SessionMode = "off" | "pinned" | "cache_aware";
+
+// Mirrors ComplexitySessionIdentity* in framework/configstore. The gateway
+// always tries these in the order header → harness → fingerprint regardless of
+// the order they are listed in.
+export type SessionIdentitySource = "header" | "harness" | "fingerprint";
+
+export interface SessionConfig {
+	mode: SessionMode;
+	ttl?: string;
+	identity_sources?: SessionIdentitySource[];
+	release_after_failures?: number;
+	// cache_aware only, from here down.
+	switch_min_similarity?: number;
+	downgrade_after_n_turns?: number;
+	min_cached_tokens_to_hold?: number;
+	max_switches_per_session?: number;
+	always_allow_escalation?: boolean;
+}
+
 export interface AnalyzerConfig {
 	tier_boundaries: TierBoundaries;
 	keywords: EditableKeywordConfig;
 	semantic?: SemanticConfig;
+	session?: SessionConfig;
 }
 
 export type KeywordListKey = keyof EditableKeywordConfig;
@@ -170,4 +194,104 @@ export function parseSemanticTimeoutMs(timeout: string | undefined): number {
 export function formatSemanticTimeout(milliseconds: number): string {
 	const safe = Number.isFinite(milliseconds) && milliseconds > 0 ? milliseconds : DEFAULT_SEMANTIC_TIMEOUT_MS;
 	return `${safe}ms`;
+}
+
+// Mirrors DefaultComplexitySession* in framework/configstore.
+export const DEFAULT_SESSION_TTL_MINUTES = 60;
+export const DEFAULT_SESSION_RELEASE_AFTER_FAILURES = 3;
+export const DEFAULT_SESSION_DOWNGRADE_AFTER_N_TURNS = 2;
+export const DEFAULT_SESSION_MIN_CACHED_TOKENS_TO_HOLD = 1024;
+
+// Fingerprint is deliberately absent, matching DefaultComplexitySessionIdentitySources:
+// it groups conversations by their opening text, so two unrelated sessions that
+// start the same way would share one tier.
+export const DEFAULT_SESSION_IDENTITY_SOURCES: SessionIdentitySource[] = ["header", "harness"];
+
+export const DEFAULT_SESSION_CONFIG: SessionConfig = {
+	mode: "off",
+	ttl: `${DEFAULT_SESSION_TTL_MINUTES}m`,
+	identity_sources: DEFAULT_SESSION_IDENTITY_SOURCES,
+	release_after_failures: DEFAULT_SESSION_RELEASE_AFTER_FAILURES,
+	switch_min_similarity: 0,
+	downgrade_after_n_turns: DEFAULT_SESSION_DOWNGRADE_AFTER_N_TURNS,
+	min_cached_tokens_to_hold: DEFAULT_SESSION_MIN_CACHED_TOKENS_TO_HOLD,
+	max_switches_per_session: 0,
+	always_allow_escalation: false,
+};
+
+// These are the wire values, not display aliases: config.json and the governance
+// API take the same three strings.
+export const SESSION_MODE_OPTIONS: Array<{
+	value: SessionMode;
+	label: string;
+	description: string;
+}> = [
+	{
+		value: "off",
+		label: "Off",
+		description: "Every turn is classified independently. Tiers can change mid-conversation.",
+	},
+	{
+		value: "pinned",
+		label: "Pinned",
+		description: "The first turn of a conversation picks the tier and the rest of the session keeps it.",
+	},
+	{
+		value: "cache_aware",
+		label: "Cache aware",
+		description: "Like Pinned, but a confident enough classification can still move the session when little cache would be lost.",
+	},
+];
+
+export const SESSION_MODE_LABELS: Record<SessionMode, string> = {
+	off: "Off",
+	pinned: "Pinned",
+	cache_aware: "Cache aware",
+};
+
+export const SESSION_IDENTITY_SOURCE_OPTIONS: Array<{
+	value: SessionIdentitySource;
+	label: string;
+	description: string;
+}> = [
+	{
+		value: "header",
+		label: "Session header",
+		description: "Uses the x-bf-session-id header sent by the caller. The most explicit source, and the only one the caller controls.",
+	},
+	{
+		value: "harness",
+		label: "Harness session ID",
+		description: "Uses the conversation ID that coding harnesses such as Claude Code and Codex already send.",
+	},
+	{
+		value: "fingerprint",
+		label: "Conversation fingerprint",
+		description:
+			"Derives an ID from the opening of the conversation when nothing else identifies it. Off by default: two unrelated conversations that start the same way are treated as one session.",
+	},
+];
+
+// TTL round-trips as a Go duration ("1h", "30m") but the form edits minutes.
+// Anything unparseable falls back to the default rather than sending 0, which
+// the server rejects.
+export function parseSessionTtlMinutes(ttl: string | undefined): number {
+	if (!ttl) return DEFAULT_SESSION_TTL_MINUTES;
+	const match = ttl.trim().match(/^([0-9]*\.?[0-9]+)(ns|us|µs|ms|s|m|h)$/);
+	if (!match) {
+		const numeric = Number(ttl);
+		return Number.isFinite(numeric) && numeric > 0 ? numeric : DEFAULT_SESSION_TTL_MINUTES;
+	}
+	const value = Number(match[1]);
+	const unitToMinutes: Record<string, number> = {
+		ns: 1 / 6e10,
+		us: 1 / 6e7,
+		µs: 1 / 6e7,
+		ms: 1 / 60000,
+		s: 1 / 60,
+		m: 1,
+		h: 60,
+	};
+	const minutes = value * unitToMinutes[match[2]];
+	return Number.isFinite(minutes) && minutes > 0 ? minutes : DEFAULT_SESSION_TTL_MINUTES;
 }
