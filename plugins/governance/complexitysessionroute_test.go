@@ -354,3 +354,145 @@ func TestWithComplexitySessionPassesThroughWhenDisabled(t *testing.T) {
 	}
 	assert.Equal(t, 3, classifyCalls, "classification was suppressed with session behaviour off")
 }
+
+func chatResponseWithCachedTokens(cached int, reported bool) *schemas.BifrostResponse {
+	usage := &schemas.BifrostLLMUsage{TotalTokens: 100}
+	if reported {
+		usage.PromptTokensDetails = &schemas.ChatPromptTokensDetails{CachedReadTokens: cached}
+	}
+	return &schemas.BifrostResponse{ChatResponse: &schemas.BifrostChatResponse{Usage: usage}}
+}
+
+func sessionWithObservations(t *testing.T) (*GovernancePlugin, *kvSessionStore, *complexitySessionState, *schemas.BifrostContext) {
+	t.Helper()
+	sessionStore, _ := newTestKVSessionStore(t)
+	p := sessionRoutePlugin(t, sessionStore, enabledSessionConfig())
+	ctx := sessionTestContext(t, "session-abc")
+	state := p.resolveComplexitySessionState(ctx, &schemas.BifrostRequest{}, nil)
+	require.NotNil(t, state)
+	_, err := sessionStore.Create(context.Background(), state.Key, &SessionComplexityRecord{Tier: "COMPLEX"}, state.TTL)
+	require.NoError(t, err)
+	return p, sessionStore, state, ctx
+}
+
+// The observation is the input cache-aware switching reasons about, so the
+// provider's reported cache size has to reach the record.
+func TestRecordSessionRouteObservationStoresCacheSize(t *testing.T) {
+	p, sessionStore, state, ctx := sessionWithObservations(t)
+
+	p.recordSessionRouteObservation(ctx, chatResponseWithCachedTokens(4096, true), schemas.OpenAI, "gpt-4o", true)
+
+	record, found, err := sessionStore.Get(context.Background(), state.Key, state.TTL)
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Len(t, record.RouteObservations, 1)
+	for _, observation := range record.RouteObservations {
+		assert.Equal(t, 4096, observation.CachedReadTokens)
+		assert.True(t, observation.CacheObserved)
+		assert.False(t, observation.LastSeenAt.IsZero())
+	}
+}
+
+// A provider that reports no cache telemetry is not a provider reporting a cold
+// cache. Collapsing the two would let a switch discard a warm cache on every
+// provider that stays quiet.
+func TestRecordSessionRouteObservationDistinguishesUnreportedFromZero(t *testing.T) {
+	p, sessionStore, state, ctx := sessionWithObservations(t)
+
+	p.recordSessionRouteObservation(ctx, chatResponseWithCachedTokens(0, false), schemas.OpenAI, "gpt-4o", true)
+
+	record, found, err := sessionStore.Get(context.Background(), state.Key, state.TTL)
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Len(t, record.RouteObservations, 1)
+	for _, observation := range record.RouteObservations {
+		assert.False(t, observation.CacheObserved, "an absent usage block was recorded as an observed zero")
+	}
+}
+
+// Usage arrives with the final chunk. Recording earlier persists zeros and reads
+// as "no cache worth keeping" on every streamed request.
+func TestRecordSessionRouteObservationIgnoresNonFinalChunks(t *testing.T) {
+	p, sessionStore, state, ctx := sessionWithObservations(t)
+
+	p.recordSessionRouteObservation(ctx, chatResponseWithCachedTokens(4096, true), schemas.OpenAI, "gpt-4o", false)
+
+	record, found, err := sessionStore.Get(context.Background(), state.Key, state.TTL)
+	require.NoError(t, err)
+	require.True(t, found)
+	assert.Empty(t, record.RouteObservations)
+}
+
+// Recording an unchanged observation every turn would put a cluster broadcast
+// back on every request, undoing the read-path work.
+func TestRecordSessionRouteObservationDoesNotWriteWhenUnchanged(t *testing.T) {
+	sessionStore, store := newTestKVSessionStore(t)
+	_, targetKV := newTestKVSessionStore(t)
+	p := sessionRoutePlugin(t, sessionStore, enabledSessionConfig())
+	ctx := sessionTestContext(t, "session-abc")
+	state := p.resolveComplexitySessionState(ctx, &schemas.BifrostRequest{}, nil)
+	require.NotNil(t, state)
+	_, err := sessionStore.Create(context.Background(), state.Key, &SessionComplexityRecord{Tier: "COMPLEX"}, state.TTL)
+	require.NoError(t, err)
+
+	response := chatResponseWithCachedTokens(4096, true)
+	p.recordSessionRouteObservation(ctx, response, schemas.OpenAI, "gpt-4o", true)
+
+	// Attached after the first observation so only the repeats are counted.
+	delegate := &forwardingKVDelegate{target: targetKV}
+	store.SetDelegate(delegate)
+	for i := 0; i < 25; i++ {
+		p.recordSessionRouteObservation(ctx, response, schemas.OpenAI, "gpt-4o", true)
+	}
+	assert.Zero(t, delegate.Sets(), "an unchanged observation was written on every turn")
+
+	// A materially different cache size is still worth recording.
+	p.recordSessionRouteObservation(ctx, chatResponseWithCachedTokens(0, true), schemas.OpenAI, "gpt-4o", true)
+	assert.NotZero(t, delegate.Sets(), "a cache that went cold was never recorded")
+}
+
+// Fallbacks and key rotation change which cache is warm, so each effective route
+// is tracked separately rather than overwriting one another.
+func TestRecordSessionRouteObservationSeparatesRoutes(t *testing.T) {
+	p, sessionStore, state, ctx := sessionWithObservations(t)
+
+	p.recordSessionRouteObservation(ctx, chatResponseWithCachedTokens(4096, true), schemas.OpenAI, "gpt-4o", true)
+	p.recordSessionRouteObservation(ctx, chatResponseWithCachedTokens(128, true), schemas.Anthropic, "claude-3-5-sonnet", true)
+
+	record, found, err := sessionStore.Get(context.Background(), state.Key, state.TTL)
+	require.NoError(t, err)
+	require.True(t, found)
+	assert.Len(t, record.RouteObservations, 2)
+}
+
+// A long session cycling through fallbacks must not grow the map without limit:
+// the whole record is rewritten, and replicated, on every write.
+func TestBoundSessionRouteObservationsEvictsLeastRecent(t *testing.T) {
+	now := time.Now()
+	observations := map[string]SessionRouteObservation{}
+	for i := 0; i < maxSessionRouteObservations+4; i++ {
+		observations[string(rune('a'+i))] = SessionRouteObservation{
+			CachedReadTokens: i,
+			CacheObserved:    true,
+			LastSeenAt:       now.Add(time.Duration(i) * time.Minute),
+		}
+	}
+
+	boundSessionRouteObservations(observations, maxSessionRouteObservations)
+
+	require.Len(t, observations, maxSessionRouteObservations)
+	// The four oldest went; the most recent survived.
+	assert.NotContains(t, observations, "a")
+	assert.Contains(t, observations, string(rune('a'+maxSessionRouteObservations+3)))
+}
+
+func TestSessionCachedTokensMateriallyChanged(t *testing.T) {
+	// Crossing zero flips whether there is a cache to protect at all.
+	assert.True(t, sessionCachedTokensMateriallyChanged(0, 10))
+	assert.True(t, sessionCachedTokensMateriallyChanged(4096, 0))
+	// Ordinary drift is not worth a cluster message.
+	assert.False(t, sessionCachedTokensMateriallyChanged(4096, 4096))
+	assert.False(t, sessionCachedTokensMateriallyChanged(4096, 4200))
+	// A large move is.
+	assert.True(t, sessionCachedTokensMateriallyChanged(4096, 8192))
+}
