@@ -8,6 +8,10 @@ Official Helm charts for deploying [Bifrost](https://github.com/maximhq/bifrost)
 
 ## Changelog
 
+### Upcoming
+
+- Documented `env.VAR_NAME` support for the Datadog plugin service-identity fields `bifrost.plugins.datadog.config.service_name`, `ml_app`, `env`, and `version` (render into `service_name`, `ml_app`, `env`, `version`). Values already passed through; this only adds the env-reference guidance to `values.yaml` comments and `values.schema.json` descriptions.
+
 ### 2.1.33
 
 - Fixed Helm schema validation failure for multi-profile OTEL configs (`bifrost.plugins.otel.config.profiles`), introduced by the `export_timeout` default in 2.1.32.
